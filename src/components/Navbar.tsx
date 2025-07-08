@@ -1,15 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  FaUser,
+  FaShoppingCart,
+  FaSignOutAlt,
+  FaBoxOpen,
+  FaCog,
+} from "react-icons/fa";
+import { useCart } from "../contexts/CartContext";
 
 const NAV_LINKS = [
-  { label: "Termékek", href: "#products" },
-  { label: "Akciók", href: "#sales" },
-  { label: "Rólunk", href: "#about" },
-  { label: "Kapcsolat", href: "#contact" },
+  { label: "Kezdőlap", href: "/" },
+  { label: "Termékek", href: "/products" },
+  { label: "Üzleteink", href: "" },
+  { label: "Szolgáltatások", href: "" },
+  { label: "GYIK", href: "" },
 ];
+const API_URL = "http://localhost:8000/api/user";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  type User = { name: string; [key: string]: any };
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    fetch(API_URL, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Hibás token vagy nincs bejelentkezve.");
+        return res.json();
+      })
+      .then((data) => setUser(data))
+      .catch(() => setUser(null));
+  }, []);
+
+  const accountBtnRef = useRef<HTMLButtonElement | null>(null);
+  const accountDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -17,7 +53,6 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Prevent body scroll when mobile menu open
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = "hidden";
@@ -26,13 +61,38 @@ const Navbar = () => {
     }
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!accountDropdownOpen) return;
+    function handler(e: MouseEvent) {
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(e.target as Node) &&
+        accountBtnRef.current &&
+        !accountBtnRef.current.contains(e.target as Node)
+      ) {
+        setAccountDropdownOpen(false);
+      }
+    }
+    function escHandler(e: KeyboardEvent) {
+      if (e.key === "Escape") setAccountDropdownOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", escHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", escHandler);
+    };
+  }, [accountDropdownOpen]);
+  const { cart } = useCart();
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <nav
       className={`z-50 fixed top-0 left-0 w-full transition-all duration-300
         ${
           scrolled
-            ? "bg-gradient-to-r from-gray-950 via-gray-900 to-slate-800 shadow-xl rounded-b-2xl py-2 backdrop-blur-xl scale-[.97]"
-            : "bg-gradient-to-r from-gray-950 via-gray-900 to-slate-800 py-5"
+            ? "bg-gradient-to-r from-gray-950 via-gray-900 to-slate-800 shadow-xl rounded-t-none rounded-b-2xl py-2 backdrop-blur-xl"
+            : "bg-gradient-to-r from-gray-950 via-gray-900 to-slate-800 rounded-t-none rounded-b-2xl py-5"
         }`}
       style={{
         WebkitBackdropFilter: "blur(8px)",
@@ -51,63 +111,129 @@ const Navbar = () => {
             NextTech
           </span>
         </a>
-
         {/* NAV LINKS (desktop) */}
-        <div className="hidden md:flex items-center space-x-2">
-          {NAV_LINKS.map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              className="px-4 py-2 rounded-xl text-white font-medium transition-all duration-200 hover:bg-gray-800/40 hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-pink-800/50"
-            >
-              {label}
-            </a>
-          ))}
-          {/* Kosár ikon */}
-          <a
-            href="#cart"
-            className="relative px-4 py-2 rounded-xl text-white font-medium flex items-center hover:bg-gray-800/40 hover:text-blue-300 transition-all duration-200"
-          >
-            <svg
-              className="w-6 h-6 mr-1"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path
-                d="M1 1h4l2.68 13.39a2 2 0 002 1.61h7.72a2 2 0 002-1.61L21 6H6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Kosár
-          </a>
-          {/* Fiók ikon */}
-          <a
-            href="#account"
-            className="ml-2 px-3 py-2 rounded-xl text-white hover:bg-gray-800/40 hover:text-blue-300 transition-all duration-200 flex items-center"
-          >
-            <svg
-              className="w-6 h-6 mr-1"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="12" cy="8" r="4"></circle>
-              <path
-                d="M2 20c0-4 4-7 10-7s10 3 10 7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Fiók
-          </a>
-        </div>
+        <div className="hidden md:flex items-center justify-between w-full px-6">
+          {/* Logó (balra) */}
+          <div className="flex-shrink-0"></div>
 
+          {/* Középen a menüpontok */}
+          <div className="flex space-x-4">
+            {NAV_LINKS.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="px-4 py-2 rounded-xl text-white font-medium transition-all duration-200 hover:bg-gray-800/40 hover:text-blue-300 focus:outline-none "
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+
+          {/* Jobbra ikonok: kosár + fiók */}
+          <div className="flex items-center space-x-4 relative">
+            {/* Kosár ikon */}
+            <a
+              href="/cart"
+              className="relative text-white hover:text-blue-300 transition-all duration-200"
+              aria-label="Kosár"
+            >
+              <FaShoppingCart size={22} />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-gray-900 animate-bounce"
+                  style={{ minWidth: 20, textAlign: "center" }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </a>
+
+            {/* Fiók ikon + dropdown */}
+            <div className="relative">
+              <button
+                ref={accountBtnRef}
+                type="button"
+                className="text-white hover:text-blue-300 transition-all duration-200"
+                onClick={() => setAccountDropdownOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={accountDropdownOpen}
+                aria-label="Fiók"
+              >
+                <FaUser size={22} />
+              </button>
+
+              {/* Dropdown tartalom */}
+              {accountDropdownOpen && (
+                <div
+                  ref={accountDropdownRef}
+                  className="absolute right-0 mt-4 min-w-[220px] bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-gray-700 rounded-2xl shadow-2xl p-0.5 flex flex-col z-50 animate-fade-in backdrop-blur-lg"
+                  style={{
+                    boxShadow:
+                      "0 8px 32px 0 rgba(0,0,0,0.4), 0 2px 6px 0 rgba(80,80,150,0.15)",
+                  }}
+                >
+                  {user ? (
+                    <>
+                      <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-800">
+                        <div className="bg-indigo-600 rounded-full w-9 h-9 flex items-center justify-center font-bold text-lg text-white shadow">
+                          {user.name?.[0]?.toUpperCase() || "U"}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white">
+                            {user.username}
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href="/orders"
+                        className="flex items-center gap-3 px-5 py-3 text-white hover:bg-indigo-800/60 transition rounded-xl m-1 font-medium"
+                        onClick={() => setAccountDropdownOpen(false)}
+                      >
+                        <FaBoxOpen /> Megrendeléseim
+                      </a>
+                      <a
+                        href="/profile"
+                        className="flex items-center gap-3 px-5 py-3 text-white hover:bg-indigo-800/60 transition rounded-xl m-1 font-medium"
+                        onClick={() => setAccountDropdownOpen(false)}
+                      >
+                        <FaCog /> Profil beállítások
+                      </a>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("user");
+                          localStorage.removeItem("token");
+                          setUser(null);
+                          setAccountDropdownOpen(false);
+                          window.location.href = "/";
+                        }}
+                        className="flex items-center gap-3 px-5 py-3 text-white rounded-xl m-1 font-medium bg-gradient-to-r from-pink-600 to-red-500 hover:from-red-500 hover:to-pink-600 transition shadow"
+                      >
+                        <FaSignOutAlt /> Kijelentkezés
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href="/login"
+                        className="block w-full text-left px-5 py-3 rounded-xl text-white font-medium hover:bg-indigo-800/60 transition m-1"
+                        onClick={() => setAccountDropdownOpen(false)}
+                      >
+                        Bejelentkezés
+                      </a>
+                      <a
+                        href="/register"
+                        className="block w-full text-left px-5 py-3 rounded-xl text-white font-medium hover:bg-indigo-800/60 transition m-1"
+                        onClick={() => setAccountDropdownOpen(false)}
+                      >
+                        Regisztráció
+                      </a>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         {/* Hamburger menu mobile */}
         <button
           type="button"
@@ -169,65 +295,86 @@ const Navbar = () => {
           `}
         >
           {/* Logo mobil nézetben is felül */}
-
-          {/* EXTRA HELY a logó és a linkek között */}
           <div className="h-4"></div>
-          {NAV_LINKS.map(({ label, href }) => (
+          {/* NAV */}
+          <div className="grid grid-cols-2 gap-3 w-full mb-4">
+            {NAV_LINKS.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="flex items-center justify-center text-center px-4 py-3 rounded-xl text-white font-bold text-base shadow hover:bg-indigo-800/70 hover:text-indigo-300 transition-all duration-200 bg-gray-800/60"
+                onClick={() => setMobileOpen(false)}
+              >
+                {label}
+              </a>
+            ))}
             <a
-              key={label}
-              href={href}
-              className="block w-full text-center px-4 py-3 rounded-xl text-white font-bold text-lg transition-all duration-200 hover:bg-gray-800/60 hover:text-blue-300"
+              href="/cart"
+              className="relative flex items-center justify-center text-center px-4 py-3 rounded-xl text-white font-bold text-base shadow hover:bg-indigo-800/70 hover:text-indigo-300 transition-all duration-200 bg-gray-800/60"
               onClick={() => setMobileOpen(false)}
             >
-              {label}
+              <FaShoppingCart className="w-5 h-5 mr-2" />
+              Kosár
+              {cartCount > 0 && (
+                <span
+                  className="absolute top-1 right-4 bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-gray-900"
+                  style={{ minWidth: 20, textAlign: "center" }}
+                >
+                  {cartCount}
+                </span>
+              )}
             </a>
-          ))}
-          {/* Kosár ikon */}
-          <a
-            href="#cart"
-            className="relative w-full flex items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-lg hover:bg-gray-800/60 hover:text-blue-300 transition-all duration-200"
-            onClick={() => setMobileOpen(false)}
-          >
-            <svg
-              className="w-6 h-6 mr-2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path
-                d="M1 1h4l2.68 13.39a2 2 0 002 1.61h7.72a2 2 0 002-1.61L21 6H6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Kosár
-          </a>
-          {/* Fiók ikon */}
-          <a
-            href="#account"
-            className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-lg hover:bg-gray-800/60 hover:text-blue-300 transition-all duration-200"
-            onClick={() => setMobileOpen(false)}
-          >
-            <svg
-              className="w-6 h-6 mr-2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="12" cy="8" r="4"></circle>
-              <path
-                d="M2 20c0-4 4-7 10-7s10 3 10 7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Fiók
-          </a>
-          {/* Menüzáró gomb külön mobilon (X) */}
+          </div>
+          {/* Felhasználói fiók blokk mobilon gridben */}
+          <div className="grid grid-cols-2 gap-3 w-full">
+            {user ? (
+              <>
+                <a
+                  href="/orders"
+                  className="flex flex-col items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-base shadow hover:bg-indigo-800/70 hover:text-indigo-300 transition-all duration-200 bg-gray-800/60"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <FaBoxOpen className="mb-1" /> Megrendeléseim
+                </a>
+                <a
+                  href="/profile"
+                  className="flex flex-col items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-base shadow hover:bg-indigo-800/70 hover:text-indigo-300 transition-all duration-200 bg-gray-800/60"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <FaCog className="mb-1" /> Profil
+                </a>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("token");
+                    setUser(null);
+                    setMobileOpen(false);
+                    window.location.href = "/";
+                  }}
+                  className="flex flex-col items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-base shadow bg-gradient-to-r from-pink-600 to-red-500 hover:from-red-500 hover:to-pink-600 hover:scale-105 transition-all col-span-2"
+                >
+                  <FaSignOutAlt className="mb-1" /> Kijelentkezés
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="flex flex-col items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-base shadow bg-gradient-to-r from-blue-700 via-fuchsia-700 to-pink-700 hover:bg-opacity-80 hover:scale-105 transition-all"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <FaUser className="mb-1" /> Bejelentkezés
+                </a>
+                <a
+                  href="/register"
+                  className="flex flex-col items-center justify-center px-4 py-3 rounded-xl text-white font-bold text-base shadow bg-gradient-to-r from-pink-700 via-fuchsia-700 to-blue-700 hover:bg-opacity-80 hover:scale-105 transition-all"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <FaUser className="mb-1" /> Regisztráció
+                </a>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>

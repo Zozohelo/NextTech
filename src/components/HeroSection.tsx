@@ -25,7 +25,7 @@ export default function HeroSection() {
           gyors szállítással, kedvező áron.
         </p>
         <a
-          href="#products"
+          href="/products"
           className="mt-8 bg-black dark:bg-white rounded-full w-fit text-white dark:text-black p-4"
         >
           Böngéssz most
