@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { DeviceContext } from "../../contexts/DeviceContext";
 import Device from "../Device";
 import Navbar from "../Navbar";

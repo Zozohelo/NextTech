@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   FaUser,
-  FaLock,
   FaBell,
   FaHome,
   FaChevronRight,
   FaBoxOpen,
-  FaEnvelopeOpenText,
-  FaMapMarkerAlt,
-  FaCamera,
 } from "react-icons/fa";
 import Navbar from "../Navbar";
 import { Spiral } from "ldrs/react";
@@ -39,11 +35,6 @@ const ProfileSettings = () => {
 
   // Egyéb state-ek
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [addresses, setAddresses] = useState<string[]>([]);
-  const [newAddress, setNewAddress] = useState("");
-  const [notifEmail, setNotifEmail] = useState(true);
-  const [notifSms, setNotifSms] = useState(false);
-  const [newsletter, setNewsletter] = useState(true);
 
   // Token a localStorage-ből
   const token = localStorage.getItem("auth_token");
@@ -92,9 +83,7 @@ const ProfileSettings = () => {
         setEditName(data.name || "");
         setEditUsername(data.username || "");
         setEditEmail(data.email || "");
-        // Ha vannak címek a válaszban (pl. data.addresses vagy data.address), akkor állítsd be:
-        if (Array.isArray(data.addresses)) setAddresses(data.addresses);
-        else if (data.address) setAddresses([data.address]);
+
         setLoading(false);
       })
       .catch((err) => {
@@ -161,17 +150,6 @@ const ProfileSettings = () => {
   };
 
   // Új cím hozzáadása (csak kliens oldali demo)
-  const handleAddressAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newAddress.trim() && !addresses.includes(newAddress.trim())) {
-      setAddresses((prev) => [...prev, newAddress.trim()]);
-      setNewAddress("");
-    }
-  };
-
-  const handleRemoveAddress = (addr: string) => {
-    setAddresses((prev) => prev.filter((a) => a !== addr));
-  };
 
   // CONTENT-ek
   const renderContent = () => {

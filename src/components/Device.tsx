@@ -1,4 +1,3 @@
-import React from "react";
 import type { IDevice } from "../utils/util";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";

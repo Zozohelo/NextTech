@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
@@ -6,7 +6,6 @@ import React, {
   type ReactNode,
 } from "react";
 import type { IDevice } from "../utils/util";
-import { toast } from "react-toastify";
 
 export interface CartItem extends IDevice {
   quantity: number;

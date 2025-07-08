@@ -1,4 +1,3 @@
-import React from "react";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
